@@ -1,0 +1,14 @@
+# Secrets
+.env
+
+# Local leftovers (not part of the project)
+.venv/
+data/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

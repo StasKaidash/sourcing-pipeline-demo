@@ -1,0 +1,952 @@
+{
+  "name": "sourcing-pipeline-native",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -32
+      ],
+      "id": "c62c3a27-3c1a-486b-9688-d07d0e55f5f7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"role_title\": \"AI Automation Engineer\",\n  \"company_context\": \"Product SaaS startup, internal operations automation team\",\n  \"location\": \"Kyiv (onsite) or Kyiv-hybrid\",\n  \"experience_years\": \"2-4\",\n  \"must_have_skills\": [\"Python\", \"LLM APIs (OpenAI / Anthropic / similar)\", \"REST API integrations\", \"PostgreSQL\"],\n  \"nice_to_have_skills\": [\"Docker\", \"AWS\", \"n8n / Zapier / Make\", \"Vector DB (Pinecone / Chroma / Weaviate)\"],\n  \"english_level_min\": \"Intermediate\",\n  \"salary_range_usd\": \"1500-2500\",\n  \"brief_summary\": \"Middle-level engineer to build LLM-powered internal automations: outbound outreach, inbox triage, RAG on internal docs. Cross-functional collaboration with HR and sales teams.\",\n  \"search_query\": \"location:Kyiv language:Python created:2020-01-01..2023-06-30 repos:>3 followers:<500\",\n  \"candidates_to_score\": 5,\n  \"top_n\": 2,\n  \"sender_name\": \"Stas Kaidash\",\n\"sender_title\": \"Recruiter, SmartOps Talent\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        -32
+      ],
+      "id": "53cfc9ec-3b6c-4e0c-badd-e5fb44091b91",
+      "name": "Job Brief"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/users",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.search_query }}"
+            },
+            {
+              "name": "per_page",
+              "value": "15"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "sourcing-pipeline-native"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        -32
+      ],
+      "id": "4d6f60af-e6a3-4079-988f-a16511d98009",
+      "name": "Search GitHub Users",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -32
+      ],
+      "id": "2d46a825-98b2-4b6e-912e-5e1f2d5520d8",
+      "name": "Split Out Users"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/users/{{ $json.login }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "sourcing-pipeline-native"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1000
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        896,
+        -32
+      ],
+      "id": "84c1c142-23c7-4435-bc2d-364a3c6fb0be",
+      "name": "Get Profile",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5808bdf4-730e-4b4f-839a-cfbc8cb3d63d",
+              "leftValue": "={{ $json.location }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "142c32ca-01f7-4e9d-9356-e682c8ba3053",
+              "leftValue": "={{ $json.type }}",
+              "rightValue": "User",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -32
+      ],
+      "id": "48cc9251-262c-460c-ba1e-14554d403550",
+      "name": "Has Location"
+    },
+    {
+      "parameters": {
+        "maxItems": "={{ $('Job Brief').first().json.candidates_to_score }}"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        -32
+      ],
+      "id": "bf3afba6-bf1b-4be4-971e-13f1f7ecf2f1",
+      "name": "Candidates To Score"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/repositories",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=user:{{ $json.login }} fork:false"
+            },
+            {
+              "name": "sort",
+              "value": "stars"
+            },
+            {
+              "name": "order",
+              "value": "desc"
+            },
+            {
+              "name": "per_page",
+              "value": "5"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "sourcing-pipeline-native"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 1500
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1568,
+        -32
+      ],
+      "id": "f4c2914a-dc12-4299-b780-eb71ed3fd1f4",
+      "name": "Get Top Repos",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4c52bb70-40b2-48bd-a2c9-8e727adf4244",
+              "name": "login",
+              "value": "={{ $('Candidates To Score').item.json.login }}",
+              "type": "string"
+            },
+            {
+              "id": "b5d97e4a-7957-45e0-8d36-fcffa3bd9506",
+              "name": "profile_url",
+              "value": "={{ $('Candidates To Score').item.json.html_url }}",
+              "type": "string"
+            },
+            {
+              "id": "b2d95641-579c-4d56-b41a-1a565c18dbb0",
+              "name": "name",
+              "value": "= {{ $('Candidates To Score').item.json.name || $('Candidates To Score').item.json.login }}",
+              "type": "string"
+            },
+            {
+              "id": "023b5dd8-4044-4400-b9c4-d42836f32998",
+              "name": "bio",
+              "value": "={{ $('Candidates To Score').item.json.bio || 'no bio'}}",
+              "type": "string"
+            },
+            {
+              "id": "87c99ec1-290a-4184-bd99-be4969de08c6",
+              "name": "location",
+              "value": "={{ $('Candidates To Score').item.json.location }}",
+              "type": "string"
+            },
+            {
+              "id": "eb66a5cc-28f2-4947-835f-24b469c8f201",
+              "name": "company",
+              "value": "={{ $('Candidates To Score').item.json.company || 'not stated'}}",
+              "type": "string"
+            },
+            {
+              "id": "09ec736d-2155-4e2c-bf82-667b844c2576",
+              "name": "account_created",
+              "value": "={{ $('Candidates To Score').item.json.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "88a8e8cf-950c-4e05-a4ae-6ba2465d9441",
+              "name": "public_repos",
+              "value": "={{ $('Candidates To Score').item.json.public_repos }}",
+              "type": "number"
+            },
+            {
+              "id": "1b831c18-67ef-472b-bff6-c1719aeb619d",
+              "name": "followers",
+              "value": "={{ $('Candidates To Score').item.json.followers }}",
+              "type": "number"
+            },
+            {
+              "id": "8679afdf-5b8f-41b9-b676-ab56ba513048",
+              "name": "top_repos",
+              "value": "={{ $json.items.map(r => '- ' + r.name + ' (' + (r.language || 'n/a') + ', ' + r.stargazers_count + ' stars): ' + (r.description || 'no description')).join('\\n') || 'no public repos' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1792,
+        -32
+      ],
+      "id": "abba1eef-f374-4de0-bda2-a22243717d5c",
+      "name": "Build Candidate"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 4.5"
+        },
+        "options": {
+          "maxTokensToSample": 1024,
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        2024,
+        312
+      ],
+      "id": "9ea57f63-8582-452b-8a79-f51541a1b2f9",
+      "name": "Claude Haiku",
+      "credentials": {
+        "anthropicApi": {
+          "id": "TszhlUdgBYAPvpJJ",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a technical recruiter. Evaluate how well this GitHub developer matches the job brief.\n\nGitHub does not state skills, experience or English level directly. Infer them:\n- skills: from repository languages and descriptions\n- estimated_years: from account age and repo history (account age is a weak signal, say so in reasoning if it drives the estimate). Today is {{ $now.toFormat('yyyy-MM-dd') }}, count years from this date.\n- english_level: from the bio and repo descriptions (\"Unknown\" if there is nothing to judge)\n- position_title: short title that fits the profile, e.g. \"Python Developer\"\n\nScore 0-100 with this rubric:\n- must-have skills: up to 60 points\n- nice-to-have skills: up to 25 points\n- location and English: up to 15 points\n\nJOB BRIEF\nRole: {{ $('Job Brief').first().json.role_title }}\nContext: {{ $('Job Brief').first().json.company_context }}\nLocation: {{ $('Job Brief').first().json.location }}\nExperience: {{ $('Job Brief').first().json.experience_years }} years\nMust have: {{ $('Job Brief').first().json.must_have_skills.join(', ') }}\nNice to have: {{ $('Job Brief').first().json.nice_to_have_skills.join(', ') }}\nEnglish: {{ $('Job Brief').first().json.english_level_min }}+\nSummary: {{ $('Job Brief').first().json.brief_summary }}\n\nCANDIDATE\nName: {{ $json.name }}\nBio: {{ $json.bio }}\nLocation: {{ $json.location }}\nCompany: {{ $json.company }}\nGitHub account created: {{ $json.account_created }}\nPublic repos: {{ $json.public_repos }}, followers: {{ $json.followers }}\nTop repositories:\n{{ $json.top_repos }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2016,
+        96
+      ],
+      "id": "cc07a7b1-6ed4-4229-b4b8-38877b1d0553",
+      "name": "Score Candidate"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"score\": 72,\n  \"position_title\": \"Python Developer\",\n  \"skills\": [\"Python\", \"Docker\"],\n  \"estimated_years\": 4,\n  \"english_level\": \"Intermediate+\",\n  \"reasoning\": \"2-3 sentences explaining the score\",\n  \"match_summary\": \"one short line label\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2152,
+        312
+      ],
+      "id": "144c737d-a487-4d87-9416-a052d7bd1f5e",
+      "name": "Score Format"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2368,
+        -32
+      ],
+      "id": "3c683ad7-fb2c-4d04-ad2d-8017d41ee2c5",
+      "name": "Candidate + Score"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ab2572f0-0c40-4e1c-8b8f-8a13e773f49a",
+              "name": "score",
+              "value": "={{ $json.output.score }}",
+              "type": "number"
+            },
+            {
+              "id": "d9a3601a-9995-4073-bc4c-2a83048a00db",
+              "name": "position_title",
+              "value": "={{ $json.output.position_title }}",
+              "type": "string"
+            },
+            {
+              "id": "228d740d-e857-4756-be89-d47d1b79203b",
+              "name": "skills",
+              "value": "={{ $json.output.skills.join(', ') }}",
+              "type": "string"
+            },
+            {
+              "id": "f38673ab-099b-4458-acba-f0cae3592f1e",
+              "name": "estimated_years",
+              "value": "={{ $json.output.estimated_years }}",
+              "type": "number"
+            },
+            {
+              "id": "390b6106-6475-4dc3-a1a8-1e59e9e3bd12",
+              "name": "reasoning",
+              "value": "={{ $json.output.reasoning }}",
+              "type": "string"
+            },
+            {
+              "id": "8e59c63e-27ec-4f17-a05b-e650be5a7be4",
+              "name": "match_summary",
+              "value": "={{ $json.output.match_summary }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "except",
+        "excludeFields": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2592,
+        -32
+      ],
+      "id": "0a05967c-ecc0-409b-9598-9d7291dfbb0d",
+      "name": "Scored Candidate"
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "score",
+              "order": "descending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        2816,
+        -32
+      ],
+      "id": "35308ebb-bf71-49f2-847b-a065c9fc5c16",
+      "name": "Sort by Score"
+    },
+    {
+      "parameters": {
+        "maxItems": "={{ $('Job Brief').first().json.top_n }}"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        -32
+      ],
+      "id": "dc8120d6-6a75-446d-834a-7cc80ee94c65",
+      "name": "Top N"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a personalized outreach email to a developer about a job opportunity.\nWarm but professional, 4-5 sentences. Write in English.\n\nStructure:\n1. Greeting + ONE specific detail from their profile that shows you actually read it (a top repo or a skill combo)\n2. Brief role pitch (1-2 sentences)\n3. Why they specifically caught your eye\n4. Soft CTA: open to a 15-min chat?\n\nSubject: max 60 characters.\n\nSign the email as:\n{{ $('Job Brief').first().json.sender_name }}\n{{ $('Job Brief').first().json.sender_title }}\nNever use placeholders like [Your Name] or [Company].\n\nROLE\n{{ $('Job Brief').first().json.role_title }}, {{ $('Job Brief').first().json.location }}\n{{ $('Job Brief').first().json.brief_summary }}\nSalary: {{ $('Job Brief').first().json.salary_range_usd }} USD/month\n\nCANDIDATE\nName: {{ $json.name }}\nBio: {{ $json.bio }}\nSkills: {{ $json.skills }}\nWhy they scored {{ $json.score }}/100: {{ $json.reasoning }}\nTop repositories:\n{{ $json.top_repos }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        3264,
+        96
+      ],
+      "id": "c3d444fd-1993-4b84-b4d3-508272dbd130",
+      "name": "Draft Email"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-5",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 5"
+        },
+        "options": {
+          "maxTokensToSample": 1024,
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        3272,
+        312
+      ],
+      "id": "41b69c08-a1c5-4db4-a56f-90a08717cd24",
+      "name": "Claude Sonnet",
+      "credentials": {
+        "anthropicApi": {
+          "id": "TszhlUdgBYAPvpJJ",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"subject\": \"Short subject line\",\n  \"body\": \"Full email body\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3400,
+        312
+      ],
+      "id": "2d48ce23-5490-48aa-853b-1b0114ada89c",
+      "name": "Email Format"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "10JKiYEfKOmvWZMmX2xnDhuSdp2NGlDrLsjrNMLYufpc",
+          "mode": "list",
+          "cachedResultName": "Sourcing Pipeline Demo — Report",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10JKiYEfKOmvWZMmX2xnDhuSdp2NGlDrLsjrNMLYufpc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10JKiYEfKOmvWZMmX2xnDhuSdp2NGlDrLsjrNMLYufpc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "candidate_id": "={{ $json.profile_url }}",
+            "position_title": "={{ $json.position_title }}",
+            "location": "={{ $json.location }}",
+            "skills": "={{ $json.skills }}",
+            "years_experience": "={{ $json.estimated_years }}",
+            "score": "={{ $json.score }}",
+            "match_summary": "={{ $json.match_summary }}",
+            "reasoning": "={{ $json.reasoning }}",
+            "email_subject": "={{ $json.output.subject }}",
+            "email_body": "={{ $json.output.body }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "candidate_id",
+              "displayName": "candidate_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "position_title",
+              "displayName": "position_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "location",
+              "displayName": "location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "skills",
+              "displayName": "skills",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "years_experience",
+              "displayName": "years_experience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "match_summary",
+              "displayName": "match_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reasoning",
+              "displayName": "reasoning",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_subject",
+              "displayName": "email_subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_body",
+              "displayName": "email_body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3824,
+        -32
+      ],
+      "id": "683274c9-7661-4f18-a5bd-a0c801e2ae56",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "lmmZVg2X2lbfQDBW",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3616,
+        -32
+      ],
+      "id": "092320c3-63e1-401e-b58b-335e55aba7a9",
+      "name": "Candidate + Email"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Job Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Brief": {
+      "main": [
+        [
+          {
+            "node": "Search GitHub Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search GitHub Users": {
+      "main": [
+        [
+          {
+            "node": "Split Out Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Users": {
+      "main": [
+        [
+          {
+            "node": "Get Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Profile": {
+      "main": [
+        [
+          {
+            "node": "Has Location",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Location": {
+      "main": [
+        [
+          {
+            "node": "Candidates To Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Candidates To Score": {
+      "main": [
+        [
+          {
+            "node": "Get Top Repos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Top Repos": {
+      "main": [
+        [
+          {
+            "node": "Build Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Candidate": {
+      "main": [
+        [
+          {
+            "node": "Score Candidate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Candidate + Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Haiku": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Score Candidate",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Format": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Score Candidate",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Candidate": {
+      "main": [
+        [
+          {
+            "node": "Candidate + Score",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Candidate + Score": {
+      "main": [
+        [
+          {
+            "node": "Scored Candidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scored Candidate": {
+      "main": [
+        [
+          {
+            "node": "Sort by Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort by Score": {
+      "main": [
+        [
+          {
+            "node": "Top N",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Top N": {
+      "main": [
+        [
+          {
+            "node": "Draft Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Candidate + Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Sonnet": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Draft Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Format": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Draft Email",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Email": {
+      "main": [
+        [
+          {
+            "node": "Candidate + Email",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Candidate + Email": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5e75de27-d88e-4b2f-8b97-4056f7d8049c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "55cab74eeee423eed9d8005b83005a8557d9b8544d75c42a37ef90e708b0216b"
+  },
+  "nodeGroups": [],
+  "id": "uucYZ1XfvPgeuY7F",
+  "tags": []
+}
