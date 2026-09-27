@@ -15,7 +15,7 @@ No code nodes, no scripts. A recruiter can change the role, the search and the s
 5. **Draft.** Claude Sonnet 5 writes a short personalized email for each shortlisted candidate, referencing a concrete repo or skill from their profile, signed by the recruiter.
 6. **Report.** Appends one row per candidate to Google Sheets. Emails are drafts: nothing is sent automatically.
 
-![Google Sheets report (candidate data blurred)](docs/screenshots/02-google-sheet.png)
+![Google Sheets report (names, profile links and repo names blurred)](docs/screenshots/02-google-sheet.png)
 
 ## Workflow, node by node
 
@@ -63,7 +63,7 @@ GitHub calls work without a token (60 requests/hour, enough for a run). For regu
 
 ## Data and privacy
 
-The workflow reads public GitHub profiles at runtime. Candidate data is stored only in the private Google Sheet the recruiter owns; nothing is committed to this repo. Screenshots have names, logins and profile links blurred.
+The workflow reads public GitHub profiles at runtime. Candidate data is stored only in the private Google Sheet the recruiter owns; nothing is committed to this repo. Screenshots have candidate names, profile links and repo names blurred; the rest of the output (scores, reasoning, email text) is shown as generated.
 
 ## Next steps
 
